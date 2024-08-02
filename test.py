@@ -6,7 +6,7 @@ import numpy as np
 import PIL.Image as pil_image
 
 from models import SRDenseNet
-from utils import convert_ycbcr_to_rgb, preprocess, calc_psnr
+from utils import convert_ycbcr_to_rgb, preprocess, calc_psnr, calc_ssim
 
 
 if __name__ == '__main__':
@@ -50,9 +50,13 @@ if __name__ == '__main__':
     psnr = calc_psnr(hr, preds)
     print('PSNR: {:.2f}'.format(psnr))
 
-    preds = preds.mul(255.0).cpu().numpy().squeeze(0).squeeze(0)
+    preds_np = preds.mul(255.0).cpu().numpy().squeeze(0).squeeze(0)
+    hr_np = hr.mul(255.0).cpu().numpy().squeeze(0).squeeze(0)
 
-    output = np.array([preds, ycbcr[..., 1], ycbcr[..., 2]]).transpose([1, 2, 0])
+    ssim_value = calc_ssim(hr_np, preds_np)
+    print('SSIM: {:.4f}'.format(ssim_value))
+
+    output = np.array([preds_np, ycbcr[..., 1], ycbcr[..., 2]]).transpose([1, 2, 0])
     output = np.clip(convert_ycbcr_to_rgb(output), 0.0, 255.0).astype(np.uint8)
     output = pil_image.fromarray(output)
     output.save(args.image_file.replace('.', '_srdensenet_x{}.'.format(args.scale)))
